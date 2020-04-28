@@ -1,7 +1,7 @@
 # Ubuntu AWSH
 
 #### Why
-- Alpine deployment does not natively support a select set of the AWS CLI tools that are needed by some teams for instance access. specifically the AWS SSM session manager.
+- Alpine deployment does not natively support a select set of the AWS CLI tools that are needed for instance access. specifically the AWS SSM session manager.
 - Python2 is in a deprecated state, and is no longer supported by the major linux distros as a viable production environment.
 - Ubuntu:Focal is a latest deployment from ubuntu that is ready for dockerized use.
 
