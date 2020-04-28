@@ -1,7 +1,7 @@
 ###############################################################################
 # AWSH Container - Vanilla AWSH Toolset
 ###############################################################################
-FROM alpine:3.10
+FROM ubuntu:focal
 
 ###############################################################################
 # ARGs
@@ -13,57 +13,68 @@ ARG https_proxy="${https_proxy}"
 ARG no_proxy="${no_proxy}"
 ARG NO_PROXY="${NO_PROXY}"
 
+ARG PRE_BUILD_PACKAGES="\
+    apt-utils \
+    build-essential \
+    software-properties-common \
+    dirmngr \
+    apt-transport-https \
+    lsb-release \
+    ca-certificates \
+    curl"
+
 ARG BUILD_PACKAGES="\
-    alpine-sdk \
     gcc \
-    krb5-dev \
-    musl-dev \
+    locales \
+    libkrb5-dev \
+    libssl-dev \
     libffi-dev \
-    openssl-dev \
-    python-dev"
+    python-dev \
+    python3-dev \
+    python3-requests-kerberos \
+    python-simplejson \
+    bash-completion"
 
 ARG RUNTIME_PACKAGES="\
     bash \
     ca-certificates \
     coreutils \
-    curl \
     git \
-    git-diff-highlight \
     graphviz \
     grep \
     groff \
     jq \
-    krb5 \
     less \
-    libc6-compat \
-    ncurses \
+    libc6 \
+    libncurses5-dev \
+    libncursesw5-dev \
     openssh-client \
-    pcre-tools \
-    py-dateutil \
-    py-httplib2 \
-    py-paramiko \
-    py-pip \
+    cl-ppcre \
     python \
-    shadow \
+    python3.7 \
+    python3-pip \
     sshpass \
     tar \
     util-linux \
-    util-linux-bash-completion \
+    bsdmainutils \
+    virtualenv \
+    python3-virtualenv \
+    krb5-user \
+    vim \
     wget"
 
 ARG RUBY_RUNTIME_PACKAGES="\
     ruby \
-    ruby-bigdecimal \
     ruby-bundler \
     ruby-dev \
-    ruby-irb \
     ruby-json \
-    ruby-rake"
+    rake"
 
 ARG SW_VER_TERRAFORMING="0.18.0"
 ARG SW_VER_WEBRICK="1.6.0"
 ARG SW_VER_FIXUID="0.4"
 
+ARG AWSH_PYTHON3_DEPS="/tmp/requirements.python3"
 ARG AWSH_PYTHON_DEPS="/tmp/requirements.python2"
 ARG AWSH_PYTHON_EXTRAS="/tmp/requirements.extras"
 
@@ -81,6 +92,7 @@ ENV PATH "/opt/awsh/bin:/opt/awsh/bin/tools:${PATH}:${AWSH_USER_HOME}/bin"
 ENV AWSH_CONTAINER docker
 ENV PATCHED_FONT_IN_USE no
 ENV AWSH_VERSION_DOCKER latest
+ENV DEBIAN_FRONTEND=noninteractive
 
 
 ###############################################################################
@@ -88,32 +100,53 @@ ENV AWSH_VERSION_DOCKER latest
 ###############################################################################
 
 # Add our dummy user and group
-RUN adduser -D -u ${PUID} ${AWSH_USER}
+RUN adduser --disabled-password --quiet -u ${PUID} ${AWSH_USER}
 
 # AWSH and AWS CLI paths
 RUN mkdir -p ${AWSH_USER_HOME}/.awsh/log ${AWSH_ROOT}/tmp ${AWSH_USER_HOME}/.aws
 COPY requirements/requirements.python2 ${AWSH_PYTHON_DEPS}
 COPY requirements/requirements.extras ${AWSH_PYTHON_EXTRAS}
+COPY requirements/requirements.python3 ${AWSH_PYTHON3_DEPS}
 
+# Pre-Build os packages
 RUN \
-    # update packages
-    apk update && apk upgrade && \
+    apt-get update && \
+    apt-get -y upgrade && \
+    apt-get install -y ${PRE_BUILD_PACKAGES}
+
+# Build os packages
+RUN \
     # install build support. needed for Kerberos installation
-    apk --update add --virtual build-dependencies ${BUILD_PACKAGES} && \
+    apt-get install -y ${BUILD_PACKAGES} && \
     # install AWSH runtime packages
-    apk --no-cache add ${RUNTIME_PACKAGES} && \
+    apt-get install -y ${RUNTIME_PACKAGES}
+
+# Python prebuild for deprecated py2 environments
+RUN \
+    curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && \
+    cd /tmp/ && \
+    python get-pip.py
+
+# Build python packages
+RUN \
     # install AWSH Python dependencies
-    python -m pip install -r ${AWSH_PYTHON_DEPS} --disable-pip-version-check && \
-    python -m pip install -r ${AWSH_PYTHON_EXTRAS} --disable-pip-version-check && \
+    pip install -r ${AWSH_PYTHON_DEPS} --disable-pip-version-check && \
+    pip install -r ${AWSH_PYTHON_EXTRAS} --disable-pip-version-check && \
+    # python 3 should become the primary source for python dependencies sooner than later
+    pip3 install -r ${AWSH_PYTHON3_DEPS} --disable-pip-version-check
+
+# Build Ruby packages
+RUN \
     # install ruby  (needed for terraforming tool)
-    apk --no-cache add ${RUBY_RUNTIME_PACKAGES} && \
-    # remove the build tools
-    apk del build-dependencies && \
-    # Add Terraforming Ruby tool
-    gem install webrick --version ${SW_VER_WEBRICK} --no-ri --no-rdoc && \
-    gem install terraforming --version ${SW_VER_TERRAFORMING} --no-ri --no-rdoc && \
-    # cleanup after installations
-    rm -rf /var/cache/apk/*
+    apt-get install -y ${RUBY_RUNTIME_PACKAGES} && \
+    # RVM nolonger supports --no-rdoc and --no-ri, using new --no-document and set to users gem file
+    echo 'gem: --no-document' >> ${AWSH_ROOT}/.gemrc && \
+    gem install webrick --version ${SW_VER_WEBRICK} && \
+    gem install terraforming --version ${SW_VER_TERRAFORMING}
+    
+
+# clean up apt packages and install
+RUN apt-get autoclean
 
 # Install diff-so-fancy (https://github.com/so-fancy/diff-so-fancy)
 RUN \
@@ -127,6 +160,18 @@ RUN \
     chown root:root /usr/local/bin/fixuid && \
     chmod 4755 /usr/local/bin/fixuid && \
     mkdir -p /etc/fixuid
+
+# Install SAM CLI
+RUN \
+    git clone "https://github.com/awslabs/aws-sam-cli.git" /tmp/aws-sam-cli/ && \    
+    cd /tmp/aws-sam-cli/ && \    
+    python3 setup.py install
+
+# Install AWS SSM Session Manager tool
+RUN \
+    curl -SsL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o /tmp/session-manager-plugin.deb && \    
+    dpkg -i /tmp/session-manager-plugin.deb && \    
+    session-manager-plugin
 
 # Build the config for fixuid
 COPY /lib/docker/fixuid.yml /etc/fixuid/config.yml
