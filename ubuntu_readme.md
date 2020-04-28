@@ -28,6 +28,8 @@
 	* bin/tools/awsh-json2orderedtable
 	* bin/tools/awsh-json2properties
 	* lib/python/*
+- trim out uneeded packages between pip and pip3 and apt that are bloating the build process.
+
 
 #### Deployment
 Can use same deployment strategy as Alpine AWSH box, for now is repo local only, no docker image in docker.io. Just pull down the ubuntu-image branch, build, and point to your local image.
