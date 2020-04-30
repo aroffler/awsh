@@ -1,7 +1,7 @@
 ###############################################################################
 # AWSH Container - Vanilla AWSH Toolset
 ###############################################################################
-FROM ubuntu:focal
+FROM ubuntu:bionic
 
 ###############################################################################
 # ARGs
@@ -51,9 +51,10 @@ ARG RUNTIME_PACKAGES="\
     openssh-client \
     cl-ppcre \
     python \
+    python-pip \
     python3.7 \
     python3-pip \
-    sshpass \
+    sshpass v\
     tar \
     util-linux \
     bsdmainutils \
@@ -121,12 +122,6 @@ RUN \
     # install AWSH runtime packages
     apt-get install -y ${RUNTIME_PACKAGES}
 
-# Python prebuild for deprecated py2 environments
-RUN \
-    curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && \
-    cd /tmp/ && \
-    python get-pip.py
-
 # Build python packages
 RUN \
     # install AWSH Python dependencies
@@ -146,7 +141,9 @@ RUN \
     
 
 # clean up apt packages and install
+RUN apt-get purge
 RUN apt-get autoclean
+
 
 # Install diff-so-fancy (https://github.com/so-fancy/diff-so-fancy)
 RUN \
