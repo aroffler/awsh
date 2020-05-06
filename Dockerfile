@@ -54,7 +54,7 @@ ARG RUNTIME_PACKAGES="\
     python-pip \
     python3.7 \
     python3-pip \
-    sshpass v\
+    sshpass\
     tar \
     util-linux \
     bsdmainutils \
