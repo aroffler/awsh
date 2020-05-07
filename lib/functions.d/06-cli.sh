@@ -155,6 +155,9 @@ function _cli_startup {
         echo "  'awsh prompt'             Enable the AWSH custom PS1 prompt"
         echo "  'awsh oldprompt'          Restore the previous PS1 prompt"
         echo ""
+        echo "  'tools'                   Show a list of all available tools in BLOX"
+        echo ""
+        echo ""
         echo "If you do not wish to see these tips then 'touch ~/.awsh/config.d/.notips'"
         echo ""
     fi
