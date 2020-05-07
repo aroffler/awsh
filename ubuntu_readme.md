@@ -17,7 +17,28 @@
 - SSM Session Manager deployed
 - Ruby install changed to include update method for install cleanup, as --no-ri is now a unsupported and deprecated option.
 - Split the various package and install scripts into pre-build , build, post build run deployments for my own sanity.
+- Add proper locales setup via library install for languages, and use of ENV docker config
+- Added a `tools` command to shell that lists out currently installed tools and cli packages with their versions and default run command
 
+```BASH
+$ tools
+
+TOOLS:
+==========================================
+
+      'Terraform v0.11.3'     terraform --help
+      'Terraform v0.12.24'    terraform12 --help
+
+      'aws-cli/1.18.29'       aws --help
+
+      'SAM CLI 0.48.0'        sam --help
+
+      'AMICLEANER 0.2.2'      amicleaner --help
+
+      'AWS Session Manager 1.1.61.0'    aws ssm start-session --target
+
+==========================================
+```
 
 #### TODO
 - Convert python2 scripts fully to python3 and remove any dependancy on deprecated python2 and pip installed packages where possible. Some of these changes will include `iteritems`, `print`, and `urlparse`.
