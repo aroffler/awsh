@@ -109,6 +109,10 @@ COPY requirements/requirements.python2 ${AWSH_PYTHON_DEPS}
 COPY requirements/requirements.extras ${AWSH_PYTHON_EXTRAS}
 COPY requirements/requirements.python3 ${AWSH_PYTHON3_DEPS}
 
+# Copy Terraform binaries
+COPY bin/terraform/terraform11 usr/local/bin/terraform11
+COPY bin/terraform/terraform12 usr/local/bin/terraform12
+
 # Pre-Build os packages
 RUN \
     apt-get update && \
