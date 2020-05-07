@@ -109,10 +109,6 @@ COPY requirements/requirements.python2 ${AWSH_PYTHON_DEPS}
 COPY requirements/requirements.extras ${AWSH_PYTHON_EXTRAS}
 COPY requirements/requirements.python3 ${AWSH_PYTHON3_DEPS}
 
-# Copy Terraform binaries
-COPY bin/terraform/terraform11 usr/local/bin/terraform11
-COPY bin/terraform/terraform12 usr/local/bin/terraform12
-
 # Pre-Build os packages
 RUN \
     apt-get update && \
@@ -173,6 +169,14 @@ RUN \
     curl -SsL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o /tmp/session-manager-plugin.deb && \    
     dpkg -i /tmp/session-manager-plugin.deb && \    
     session-manager-plugin
+
+# Get and Install Terraform 11 and 12 Binaries
+RUN \
+    curl -Ssl "https://releases.hashicorp.com/terraform/0.12.24/terraform_0.12.24_linux_amd64.zip" -o /tmp/terraform12.zip && \
+    curl -Ssl "https://releases.hashicorp.com/terraform/0.11.3/terraform_0.11.3_linux_amd64.zip" -o /tmp/terraform11.zip && \
+    unzip -q /tmp/terraform12.zip -d /usr/local/bin/ && \
+    mv /usr/local/bin/terraform /usr/local/bin/terraform12 && \
+    unzip -q /tmp/terraform11.zip -d /usr/local/bin/
 
 # Build the config for fixuid
 COPY /lib/docker/fixuid.yml /etc/fixuid/config.yml
