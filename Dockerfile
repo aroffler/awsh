@@ -16,6 +16,7 @@ ARG NO_PROXY="${NO_PROXY}"
 ARG PRE_BUILD_PACKAGES="\
     apt-utils \
     build-essential \
+    language-pack-en-base \
     software-properties-common \
     dirmngr \
     apt-transport-https \
@@ -54,7 +55,7 @@ ARG RUNTIME_PACKAGES="\
     python-pip \
     python3.7 \
     python3-pip \
-    sshpass\
+    sshpass \
     tar \
     util-linux \
     bsdmainutils \
@@ -93,7 +94,10 @@ ENV PATH "/opt/awsh/bin:/opt/awsh/bin/tools:${PATH}:${AWSH_USER_HOME}/bin"
 ENV AWSH_CONTAINER docker
 ENV PATCHED_FONT_IN_USE no
 ENV AWSH_VERSION_DOCKER latest
+# Suppress command line queries for information, forces packages to install to defaults.
 ENV DEBIAN_FRONTEND=noninteractive
+# Set the env local for the docker image
+ENV LANG en_US.UTF-8
 
 
 ###############################################################################
@@ -114,6 +118,13 @@ RUN \
     apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y ${PRE_BUILD_PACKAGES}
+
+# Because Debian doesnt like to configure locale for docker for some aweful reason.. 
+# we are forced to handle this by hand with Ubuntu docker locales set locally.
+# https://stackoverflow.com/questions/28405902/how-to-set-the-locale-inside-a-debian-ubuntu-docker-container/28406007#28406007
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=en_US.UTF-8
 
 # Build os packages
 RUN \
@@ -159,15 +170,12 @@ RUN \
     mkdir -p /etc/fixuid
 
 # Install SAM CLI
-RUN \
-    git clone "https://github.com/awslabs/aws-sam-cli.git" /tmp/aws-sam-cli/ && \    
-    cd /tmp/aws-sam-cli/ && \    
-    python3 setup.py install
+RUN pip3 install aws-sam-cli --disable-pip-version-check
 
 # Install AWS SSM Session Manager tool
 RUN \
-    curl -SsL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o /tmp/session-manager-plugin.deb && \    
-    dpkg -i /tmp/session-manager-plugin.deb && \    
+    curl -SsL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o /tmp/session-manager-plugin.deb && \
+    dpkg -i /tmp/session-manager-plugin.deb && \
     session-manager-plugin
 
 # Get and Install Terraform 11 and 12 Binaries
