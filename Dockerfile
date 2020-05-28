@@ -38,6 +38,7 @@ ARG BUILD_PACKAGES="\
 
 ARG RUNTIME_PACKAGES="\
     bash \
+    tree \
     ca-certificates \
     coreutils \
     git \
