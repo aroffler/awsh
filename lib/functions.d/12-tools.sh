@@ -21,8 +21,6 @@ function tools {
         echo ""
         echo "      '${AWS_SAM_VER}'        sam --help"
         echo ""
-        echo "      'AMICLEANER ${AMICLEANER_VER}'      amicleaner --help"
-        echo ""
         echo "      'AWS Session Manager ${AWS_SESSION_MGR_VER}'    aws ssm start-session --target"
         echo ""
         echo "=========================================="
