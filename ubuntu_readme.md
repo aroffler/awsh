@@ -33,8 +33,6 @@ TOOLS:
 
       'SAM CLI 0.48.0'        sam --help
 
-      'AMICLEANER 0.2.2'      amicleaner --help
-
       'AWS Session Manager 1.1.61.0'    aws ssm start-session --target
 
 ==========================================
